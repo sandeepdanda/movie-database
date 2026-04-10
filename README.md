@@ -1,37 +1,77 @@
-# Not Another Rewatch 🎬
+# Not Another Rewatch 🎬🍿
 
 Stop rewatching the same stuff. Let AI find you something new.
 
-A full-stack movie discovery and tracking platform powered by AI - semantic search, personalized recommendations, and a conversational movie expert that actually knows 600,000+ films.
+> **Status:** Early development - [see the roadmap](docs/phase-plan.md)
 
-> **Status:** Early development. See [Phase Plan](docs/phase-plan.md) for the roadmap.
+---
 
-## What It Does
+### What It Does
 
-- **AI-powered search** - "movies about loneliness in space" actually works
-- **Movie discovery chat** - "I liked Inception but want something funnier" gets real answers
-- **Personal tracking** - rate movies, build a watchlist, log your diary
-- **Smart recommendations** - based on your taste, not just popularity
-- **600K+ movies** with cast, crew, genres, ratings, and streaming info
+🔍 **Semantic search** - "heist movies with dark humor" returns real results, not keyword matches
 
-## Tech Stack
+💬 **AI movie chat** - "something like Inception but funnier" gets grounded recommendations
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React + TypeScript + Vite |
-| Backend | Java 21 + Spring Boot 3.4 |
-| Database | DynamoDB (single-table design) |
-| AI | OpenAI (embeddings + chat) |
-| Search | Semantic vector search + full-text |
-| Data | TMDB API + Kaggle Movies Dataset |
+📊 **Track & discover** - rate movies, build a watchlist, see your taste evolve over time
 
-## Getting Started
+### Why I'm Building This
 
-```bash
-# Coming soon - Docker Compose one-liner
-docker compose up
+Every night, same story. I get home from work and college, heat up dinner, sit down, open Netflix... and begin the sacred 45-minute ritual of scrolling through every streaming app known to mankind. By the time I finally pick something, my food is cold, my motivation is gone, and I've settled on The Office for the 47th time.
+
+I did the math. I spend more time *choosing* what to watch than actually watching it. That's not a hobby, that's a part-time job with no pay and terrible benefits.
+
+So I'm building the app I wish existed - one where I can say "give me something like Interstellar but less crying" and actually get a good answer. Not "you watched Breaking Bad, here's a cooking show." Real recommendations that understand vibes, not just genres.
+
+### Architecture
+
+```mermaid
+graph LR
+    React[React + TS] -->|REST + SSE| API[Spring Boot + Java 21]
+    API --> DDB[DynamoDB]
+    API --> Vec[Vector Store]
+    API --> OpenAI[OpenAI API]
+    API --> TMDB[TMDB API]
 ```
 
-## License
+### Tech Stack
+
+| | Technology |
+|-|-----------|
+| Frontend | React 18, TypeScript, Vite, TanStack Query, Tailwind, shadcn/ui |
+| Backend | Java 21, Spring Boot 3.4, Spring AI, AWS SDK v2 |
+| Database | DynamoDB - [single-table design](docs/research-dynamodb-design.md) |
+| AI | OpenAI embeddings + chat, vector similarity search |
+| Data | 45K+ movies from [Kaggle](https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset) + TMDB API enrichment |
+
+### Getting Started
+
+The full app is under development. The data pipeline is functional today:
+
+```bash
+# Clone and set up
+git clone <repo-url>
+cd not-another-rewatch
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+# Download the dataset
+# https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset
+# Place CSV files in data/
+
+# Run the ETL pipeline (requires PostgreSQL)
+python -m etl.extract
+python -m etl.transform
+python -m etl.load
+```
+
+**Prerequisites:** Python 3.10+, PostgreSQL 15+
+
+### Key Design Decisions
+
+- **DynamoDB single-table** - one query returns a movie with all its cast, crew, and genres using the adjacency list pattern. No JOINs needed.
+- **AI replaces full-text search** - DynamoDB can't do text search, so we use embeddings for semantic search instead. "Movies about existential dread in suburbia" just works.
+- **Graceful degradation** - every AI feature has a non-AI fallback. The app works fully without OpenAI.
+
+### License
 
 MIT
