@@ -81,7 +81,7 @@ def extract_cast(credits_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 def extract_crew(credits_df: pd.DataFrame, persons_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Extract crew records (directors, writers, producers)."""
-    persons = {row["id"]: row for _, row in persons_df.iterrows()}
+    persons = {row["id"]: {"id": row["id"], "name": row["name"]} for _, row in persons_df.iterrows()}
     crew_records = []
 
     for _, row in credits_df.iterrows():
