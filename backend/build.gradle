@@ -20,6 +20,11 @@ repositories {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+
+	// AWS DynamoDB Enhanced Client - type-safe ORM-like access to DynamoDB
+	implementation platform('software.amazon.awssdk:bom:2.31.1')
+	implementation 'software.amazon.awssdk:dynamodb-enhanced'
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

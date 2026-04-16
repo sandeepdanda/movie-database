@@ -105,7 +105,7 @@ def movie_items(row, genres, cast_df, crew_df):
         item = {
             "PK": f"MOVIE#{mid}",
             "SK": f"CAST#{order}#{pid}",
-            "personName": clean(c.get("character_name", "")),
+            "personName": clean(c.get("name")),
             "character": clean(c.get("character_name")),
             "castOrder": clean(c["cast_order"]),
             # GSI1: person filmography
@@ -123,7 +123,7 @@ def movie_items(row, genres, cast_df, crew_df):
         item = {
             "PK": f"MOVIE#{mid}",
             "SK": f"CREW#{dept}#{pid}",
-            "personName": clean(c.get("person_name", "")),
+            "personName": clean(c.get("name")),
             "department": clean(dept),
             "job": clean(c.get("job")),
             # GSI1: person filmography
@@ -197,6 +197,10 @@ if __name__ == "__main__":
 
     # Merge genre info for the loader (needs genre_name, not just genre_id)
     genre_data = genre_junction.merge(genres_df, left_on="genre_id", right_on="id", suffixes=("", "_genre"))
+
+    # Merge person names into cast and crew
+    cast_df = cast_df.merge(persons_df[["id", "name"]], left_on="person_id", right_on="id", suffixes=("", "_person"))
+    crew_df = crew_df.merge(persons_df[["id", "name"]], left_on="person_id", right_on="id", suffixes=("", "_person"))
 
     load_movies(movies_df, genre_data, cast_df, crew_df)
     logger.info("ETL complete")
