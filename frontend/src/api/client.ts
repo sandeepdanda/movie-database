@@ -13,6 +13,8 @@ async function get<T>(path: string): Promise<T> {
 export const api = {
   getMovie: (id: string) => get<MovieResponse>(`/movies/${id}`),
 
+  getSimilarMovies: (id: string, limit = 6) => get<MovieSummary[]>(`/movies/${id}/similar?limit=${limit}`),
+
   browseMovies: (params: { genre?: string; decade?: string; sort?: string; limit?: number }) => {
     const query = new URLSearchParams();
     if (params.genre) query.set('genre', params.genre);
@@ -29,4 +31,10 @@ export const api = {
   search: (q: string, limit = 10) => get<MovieSummary[]>(`/search?q=${encodeURIComponent(q)}&limit=${limit}`),
 
   semanticSearch: (q: string, limit = 10) => get<MovieSummary[]>(`/search/semantic?q=${encodeURIComponent(q)}&limit=${limit}`),
+
+  chat: (message: string) => fetch(`${BASE}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message }),
+  }),
 };

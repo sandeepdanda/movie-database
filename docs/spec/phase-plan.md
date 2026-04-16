@@ -11,8 +11,8 @@ A full-stack movie discovery and tracking platform with AI-powered search, recom
 | Frontend | React 18 + TypeScript + Vite | TanStack Query + Router, Tailwind + shadcn/ui |
 | Backend | Java 21 + Spring Boot 3.5 | Virtual threads, records, Spring AI |
 | Database | DynamoDB (single-table design) | Hybrid 2-table: MovieCatalog + UserActivity |
-| Vector Search | Amazon S3 Vectors (or Pinecone free tier) | For AI-powered semantic search |
-| AI | OpenAI API (embeddings + chat) | text-embedding-3-small + gpt-4o-mini |
+| Vector Search | In-memory cosine similarity (embeddings in JSON) | Upgrade to pgvector/Pinecone later if needed |
+| AI | sentence-transformers all-MiniLM-L6-v2 (free, local) | 384-dim embeddings, PyTorch on CPU |
 | Data Pipeline | Python (existing ETL, retargeted to DDB) | Pandas + boto3 |
 | Cache | Caffeine (in-process) | Upgrade to Redis later if needed |
 | Auth | JWT (Spring Security + jjwt) | Stateless, simple |
@@ -123,7 +123,9 @@ A full-stack movie discovery and tracking platform with AI-powered search, recom
 
 ---
 
-## Phase 4: React Frontend Foundation (weeks 5-6) - IN PROGRESS
+## Phase 4: React Frontend Foundation (weeks 5-6) ✅
+
+**Status:** Complete (2026-04-16). Skeleton loading, dark mode, responsive polish deferred.
 
 **Goal:** Movie browsing UI - the visual layer that makes the project demoable.
 
@@ -178,38 +180,61 @@ A full-stack movie discovery and tracking platform with AI-powered search, recom
 
 ---
 
-## Phase 6: AI - Embeddings & Semantic Search (weeks 8-9)
+## Phase 6: AI - Embeddings & Semantic Search (weeks 8-9) ✅
+
+**Status:** Complete (2026-04-16). Hybrid search deferred.
 
 **Goal:** "Movies about loneliness in space" actually works.
 
 **Tasks:**
-- Python script: generate embeddings for all movies (OpenAI text-embedding-3-small)
-- Backend: semantic search endpoint `GET /api/v1/search/semantic?q={query}`
-- Backend: similar movies endpoint `GET /api/v1/movies/{id}/similar`
-- Frontend: toggle between "Title search" and "AI search"
-- Frontend: "Similar Movies" section on movie detail page
-- Hybrid search: combine title prefix match + semantic results
+- [x] Python script: generate embeddings for all movies (sentence-transformers all-MiniLM-L6-v2, free, local)
+- [x] Backend: semantic search endpoint `GET /api/v1/search/semantic?q={query}`
+- [x] Backend: VectorSearchIndex - in-memory cosine similarity search
+- [x] Backend: embedding_server.py - Python HTTP server for query embedding (port 8081)
+- [x] Frontend: toggle between "Title search" and "AI search"
+- [ ] Backend: similar movies endpoint `GET /api/v1/movies/{id}/similar` (deferred)
+- [ ] Hybrid search: combine title prefix match + semantic results (deferred)
 
-**Deliverable:** Semantic search that understands natural language. Similar movies on every detail page.
+**Notes:**
+- Spring AI ONNX approach failed: AL2 has GLIBC 2.26, ONNX runtime needs 2.27+
+- Switched to Python embedding server (sentence-transformers uses PyTorch, no GLIBC issue)
+- 384-dim embeddings, ~80MB model, runs on CPU
+- Tested: "space exploration" → Interstellar #1, "dark crime thriller" → Dark Knight #1
+- Only 10 test movies embedded; full 45K dataset embedding pending
 
-**Learning focus:** Embeddings, vector similarity search, Spring AI, batch processing at scale.
+**Deliverable:** Semantic search that understands natural language queries.
+
+**Learning focus:** Embeddings, vector similarity search, cosine similarity, model selection (ONNX vs PyTorch), GLIBC compatibility.
 
 ---
 
-## Phase 7: AI - Movie Discovery Chat (weeks 10-11)
+## Phase 7: AI - Movie Discovery Chat (weeks 10-11) ✅
+
+**Status:** Complete (2026-04-16). Real LLM integration deferred (swap in Groq/OpenAI later).
 
 **Goal:** Conversational AI that helps users discover movies.
 
-**Tasks:**
-- Backend: chat endpoint `POST /api/v1/chat` with SSE streaming
-- RAG pipeline: user message → semantic search → LLM response grounded in real data
-- Conversation memory (last 10 messages)
-- Frontend: chat panel with streaming messages and inline movie cards
-- Suggested prompts: "Movies like Inception but funnier"
+### Phase 7a: Similar Movies ✅
+- [x] Backend: `GET /api/v1/movies/{id}/similar` - cosine similarity on pre-computed embeddings
+- [x] Frontend: "Similar Movies" section on movie detail page
 
-**Deliverable:** Working movie chatbot with grounded recommendations. Streaming responses.
+### Phase 7b: Chat Backend with RAG ✅
+- [x] Backend: `POST /api/v1/chat` endpoint with SSE streaming
+- [x] RAG pipeline: user message → embed query → semantic search → build response with movie context
+- [x] Template-based response (no LLM - swap in Groq/OpenAI as drop-in later)
 
-**Learning focus:** RAG architecture, prompt engineering, SSE streaming in Spring Boot, chat UX.
+### Phase 7c: Chat Frontend ✅
+- [x] Chat panel UI with streaming word-by-word display
+- [x] Inline movie poster cards (clickable → movie detail page)
+- [x] Suggested prompt chips on empty state
+
+**Notes:**
+- No LLM needed for v1 - template builds structured response from semantic search results
+- SSE streaming plumbing ready for real LLM (just replace buildResponse() with API call)
+- Ollama won't run on AL2 (GLIBC 2.26 too old) - use Groq free tier when ready
+- etl/setup.sh created to run all data loading steps in one shot
+
+**Deliverable:** Working movie chatbot with streaming responses and clickable movie cards.
 
 ---
 
@@ -285,10 +310,10 @@ A full-stack movie discovery and tracking platform with AI-powered search, recom
 | 1 ✅ | Project Setup & DDB Design | 1 | DynamoDB single-table design |
 | 2 ✅ | ETL to DynamoDB | 2 | Batch writes, denormalization |
 | 3 ✅ | Java API Foundation | 3-4 | Spring Boot, AWS SDK v2 |
-| 4 | React Frontend + TMDB Posters | 5-6 | React+TS, TanStack Query, Tailwind, API integration |
-| 5 | Search & Filtering | 7 | DDB queries, debouncing, URL state |
-| 6 | AI Embeddings & Semantic Search | 8-9 | Embeddings, vector search, Spring AI |
-| 7 | AI Chat & Discovery | 10-11 | RAG, streaming, prompt engineering |
+| 4 ✅ | React Frontend + TMDB Posters | 5-6 | React+TS, TanStack Query, Tailwind, API integration |
+| 5 ✅ | Search & Filtering | 7 | DDB queries, debouncing, URL state |
+| 6 ✅ | AI Embeddings & Semantic Search | 8-9 | Embeddings, vector search, cosine similarity |
+| 7 ✅ | AI Chat & Discovery | 10-11 | RAG, SSE streaming, chat UX |
 | 8 | Auth, Watchlist, Ratings | 12-13 | Spring Security, JWT, user data in DDB |
 | 9 | Personal Stats & AI Insights | 14 | Aggregation, visualization, personalization |
 | 10 | Testing & Quality | 15 | Testing strategy, Testcontainers, Playwright |

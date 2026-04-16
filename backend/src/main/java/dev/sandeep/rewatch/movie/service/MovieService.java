@@ -83,6 +83,19 @@ public class MovieService {
         }
     }
 
+    public List<MovieSummary> getSimilarMovies(String movieId, int limit) {
+        return vectorIndex.findSimilar(movieId, limit).stream()
+                .map(r -> {
+                    var entry = searchIndex.getById(r.movieId());
+                    if (entry != null) {
+                        return new MovieSummary(entry.id(), entry.title(), entry.releaseYear(),
+                                entry.voteAvg(), entry.popularity(), entry.posterUrl());
+                    }
+                    return new MovieSummary(r.movieId(), "Unknown", "", 0.0, 0.0, null);
+                })
+                .toList();
+    }
+
     @Cacheable(value = "movies", key = "#id")
     public Optional<MovieResponse> getMovieById(String id) {
         var items = repository.getMovieById(id);

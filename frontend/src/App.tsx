@@ -4,6 +4,7 @@ import { HomePage } from './pages/HomePage';
 import { MoviePage } from './pages/MoviePage';
 import { BrowsePage } from './pages/BrowsePage';
 import { PersonPage } from './pages/PersonPage';
+import { ChatPage } from './pages/ChatPage';
 import { SearchBar } from './components/SearchBar';
 import './index.css';
 
@@ -24,6 +25,7 @@ function Nav() {
           <SearchBar />
           <Link to="/" className="text-zinc-400 hover:text-white">Home</Link>
           <Link to="/browse" className="text-zinc-400 hover:text-white">Browse</Link>
+          <Link to="/chat" className="text-zinc-400 hover:text-white">Chat</Link>
         </div>
       </div>
     </nav>
@@ -40,8 +42,9 @@ export default function App() {
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/browse" element={<BrowsePage />} />
-              <Route path="/movies/:id" element={<MoviePage />} />
+              <Route path="/movie/:id" element={<MoviePage />} />
               <Route path="/persons/:id" element={<PersonPage />} />
+              <Route path="/chat" element={<ChatPage />} />
             </Routes>
           </main>
         </div>

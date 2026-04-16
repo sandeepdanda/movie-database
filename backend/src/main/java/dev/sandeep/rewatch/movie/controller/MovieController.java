@@ -29,6 +29,13 @@ public class MovieController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/{id}/similar")
+    public List<MovieSummary> getSimilarMovies(
+            @PathVariable String id,
+            @RequestParam(required = false, defaultValue = "6") int limit) {
+        return movieService.getSimilarMovies(id, limit);
+    }
+
     @GetMapping
     public List<MovieSummary> browseMovies(
             @RequestParam(required = false) String genre,

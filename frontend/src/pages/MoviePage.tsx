@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/client';
+import { MovieCard } from '../components/MovieCard';
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p';
 
@@ -9,6 +10,11 @@ export function MoviePage() {
   const { data: movie, isLoading } = useQuery({
     queryKey: ['movie', id],
     queryFn: () => api.getMovie(id!),
+    enabled: !!id,
+  });
+  const { data: similar } = useQuery({
+    queryKey: ['similar', id],
+    queryFn: () => api.getSimilarMovies(id!),
     enabled: !!id,
   });
 
@@ -79,6 +85,15 @@ export function MoviePage() {
           </div>
         </div>
       </div>
+
+      {similar && similar.length > 0 && (
+        <div className="mt-12">
+          <h2 className="text-xl font-semibold mb-4">Similar Movies</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+            {similar.map(m => <MovieCard key={m.id} movie={m} />)}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

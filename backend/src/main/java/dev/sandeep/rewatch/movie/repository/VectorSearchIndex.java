@@ -65,6 +65,22 @@ public class VectorSearchIndex {
                 .toList();
     }
 
+    /**
+     * Find movies similar to a given movie by its ID.
+     * Excludes the source movie from results.
+     */
+    public List<SearchResult> findSimilar(String movieId, int limit) {
+        float[] vec = embeddings.get(movieId);
+        if (vec == null) return List.of();
+
+        return embeddings.entrySet().stream()
+                .filter(e -> !e.getKey().equals(movieId))
+                .map(e -> new SearchResult(e.getKey(), cosineSimilarity(vec, e.getValue())))
+                .sorted((a, b) -> Double.compare(b.score(), a.score()))
+                .limit(limit)
+                .toList();
+    }
+
     public boolean isAvailable() {
         return !embeddings.isEmpty();
     }
