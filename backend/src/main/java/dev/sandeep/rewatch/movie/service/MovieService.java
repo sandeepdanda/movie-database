@@ -3,7 +3,9 @@ package dev.sandeep.rewatch.movie.service;
 import dev.sandeep.rewatch.movie.model.MovieCatalogItem;
 import dev.sandeep.rewatch.movie.model.MovieResponse;
 import dev.sandeep.rewatch.movie.model.MovieSummary;
+import dev.sandeep.rewatch.movie.model.PersonResponse;
 import dev.sandeep.rewatch.movie.repository.MovieRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,6 +24,7 @@ public class MovieService {
      * Get full movie details by ID.
      * Queries all items with PK=MOVIE#{id} and assembles them into a response.
      */
+    @Cacheable(value = "movies", key = "#id")
     public Optional<MovieResponse> getMovieById(String id) {
         var items = repository.getMovieById(id);
         if (items.isEmpty()) {
@@ -60,6 +63,26 @@ public class MovieService {
                 meta.getVoteAvg(), meta.getVoteCount(), meta.getPopularity(),
                 meta.getPosterUrl(), genres, cast, crew
         ));
+    }
+
+    @Cacheable(value = "persons", key = "#id")
+    public Optional<PersonResponse> getPersonById(String id) {
+        var items = repository.getPersonFilmography(id);
+        if (items.isEmpty()) {
+            return Optional.empty();
+        }
+
+        String name = items.stream()
+                .map(MovieCatalogItem::getPersonName)
+                .filter(n -> n != null && !n.isBlank())
+                .findFirst()
+                .orElse("Unknown");
+
+        var filmography = items.stream()
+                .map(this::toSummary)
+                .toList();
+
+        return Optional.of(new PersonResponse(id, name, filmography));
     }
 
     public List<MovieSummary> getMoviesByGenre(String genre, int limit) {

@@ -25,6 +25,10 @@ dependencies {
 	implementation platform('software.amazon.awssdk:bom:2.31.1')
 	implementation 'software.amazon.awssdk:dynamodb-enhanced'
 
+	// Caffeine cache - in-memory cache for hot movie data
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	implementation 'com.github.ben-manes.caffeine:caffeine'
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

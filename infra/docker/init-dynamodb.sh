@@ -27,7 +27,7 @@ awslocal dynamodb create-table \
         ],
         "Projection": {
           "ProjectionType": "INCLUDE",
-          "NonKeyAttributes": ["title", "releaseYear", "voteAvg", "popularity", "posterUrl"]
+          "NonKeyAttributes": ["title", "releaseYear", "voteAvg", "popularity", "posterUrl", "personName"]
         }
       },
       {

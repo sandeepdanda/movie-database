@@ -59,6 +59,22 @@ public class MovieRepository {
     }
 
     /**
+     * AP3: Person filmography via GSI1.
+     * GSI1PK = PERSON#{id}, sorted by releaseYear desc.
+     */
+    public List<MovieCatalogItem> getPersonFilmography(String personId) {
+        var request = QueryEnhancedRequest.builder()
+                .queryConditional(QueryConditional.keyEqualTo(
+                        Key.builder().partitionValue("PERSON#" + personId).build()))
+                .scanIndexForward(false)
+                .build();
+
+        return gsi1.query(request).stream()
+                .flatMap(page -> page.items().stream())
+                .toList();
+    }
+
+    /**
      * AP5: Movies by decade via GSI1.
      * GSI1PK = DECADE#{decade}s, sorted by popularity desc.
      */
