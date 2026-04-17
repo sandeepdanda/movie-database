@@ -83,5 +83,8 @@ export const api = {
     totalRated: number; totalWatchlist: number; averageRating: number;
     ratingDistribution: Record<string, number>;
     topGenres: { genre: string; count: number }[];
+    favoriteGenre: string | null;
+    favoriteDecade: string | null;
+    achievements: { id: string; title: string; desc: string; icon: string }[];
   }>('/stats'),
 };
