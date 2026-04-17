@@ -290,13 +290,19 @@ A full-stack movie discovery and tracking platform with AI-powered search, recom
 
 **Goal:** Confidence that everything works.
 
-**Tasks:**
-- Backend: unit tests (JUnit 5 + Mockito), integration tests (Testcontainers + LocalStack)
-- Frontend: component tests (Vitest), E2E tests (Playwright)
-- ETL: pytest for transform functions
-- Target: 80%+ service layer coverage, 3-5 E2E scenarios
+### Phase 10a: Backend Unit Tests
+- MovieService tests (JUnit 5 + Mockito)
+- AuthController tests (register, login, duplicate email)
+- JwtUtil tests (generate, validate, expired)
 
-**Deliverable:** Comprehensive test suite. CI runs all tests.
+### Phase 10b: API Integration Tests
+- Full endpoint tests with MockMvc (movies, search, auth, watchlist)
+
+### Phase 10c: Frontend Tests (deferred)
+- Component tests (Vitest)
+- E2E tests (Playwright)
+
+**Deliverable:** Backend test suite with service + API coverage.
 
 **Learning focus:** Testing strategy, Testcontainers, Playwright.
 
