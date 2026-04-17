@@ -1,12 +1,15 @@
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
 import { MovieCard } from '../components/MovieCard';
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p';
 
 export function MoviePage() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const { data: movie, isLoading } = useQuery({
     queryKey: ['movie', id],
     queryFn: () => api.getMovie(id!),
@@ -17,6 +20,35 @@ export function MoviePage() {
     queryFn: () => api.getSimilarMovies(id!),
     enabled: !!id,
   });
+
+  const [inWatchlist, setInWatchlist] = useState(false);
+  const [userRating, setUserRating] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    api.getWatchlist().then(list => setInWatchlist(list.some(w => w.movieId === id))).catch(() => {});
+    api.getRatings().then(list => {
+      const r = list.find(r => r.movieId === id);
+      if (r) setUserRating(r.rating);
+    }).catch(() => {});
+  }, [user, id]);
+
+  async function toggleWatchlist() {
+    if (!movie || !id) return;
+    if (inWatchlist) {
+      await api.removeFromWatchlist(id);
+      setInWatchlist(false);
+    } else {
+      await api.addToWatchlist(id, movie.title);
+      setInWatchlist(true);
+    }
+  }
+
+  async function handleRate(rating: number) {
+    if (!movie || !id) return;
+    await api.rateMovie(id, movie.title, rating);
+    setUserRating(rating);
+  }
 
   if (isLoading) return <p className="text-zinc-500">Loading...</p>;
   if (!movie) return <p className="text-zinc-500">Movie not found.</p>;
@@ -51,6 +83,24 @@ export function MoviePage() {
           </p>
 
           {movie.tagline && <p className="text-zinc-500 italic mb-4">"{movie.tagline}"</p>}
+
+          {user && (
+            <div className="flex items-center gap-4 mb-4">
+              <button onClick={toggleWatchlist}
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                  inWatchlist ? 'bg-green-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}>
+                {inWatchlist ? '✓ In Watchlist' : '+ Watchlist'}
+              </button>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map(star => (
+                  <button key={star} onClick={() => handleRate(star)}
+                    className={`text-xl transition ${star <= userRating ? 'text-yellow-400' : 'text-zinc-600 hover:text-yellow-300'}`}>
+                    ★
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-2 mb-6">
             {movie.genres.map(g => (

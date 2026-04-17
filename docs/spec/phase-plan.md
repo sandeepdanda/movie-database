@@ -238,18 +238,30 @@ A full-stack movie discovery and tracking platform with AI-powered search, recom
 
 ---
 
-## Phase 8: User Features - Auth, Watchlist, Ratings (weeks 12-13)
+## Phase 8: User Features - Auth, Watchlist, Ratings (weeks 12-13) ✅
+
+**Status:** Complete (2026-04-17). Diary modal and profile page deferred.
 
 **Goal:** Personal movie tracking.
 
-**Tasks:**
-- Backend: JWT authentication (Spring Security 6)
-- DynamoDB UserActivity table: watchlist, ratings, diary entries
-- Frontend: auth flow, watchlist button, star rating, diary modal, profile page
+### Phase 8a: Auth Backend ✅
+- [x] Spring Security + JWT (jjwt 0.12.6, BCrypt, 7-day tokens)
+- [x] `POST /api/v1/auth/register` and `POST /api/v1/auth/login`
+- [x] JwtAuthFilter on protected endpoints, public endpoints still open
+- [x] UserActivity DynamoDB table: USER#id/#PROFILE with GSI3 email lookup
 
-**Deliverable:** Users can create accounts, build watchlists, rate movies, log watches.
+### Phase 8b: Auth Frontend ✅
+- [x] AuthContext (localStorage token, login/register/logout)
+- [x] Login/Register page with toggle
+- [x] Conditional nav (Sign In vs username + Logout + Watchlist)
 
-**Learning focus:** Spring Security with JWT, DynamoDB user data patterns, React auth, optimistic UI.
+### Phase 8c: Watchlist & Ratings ✅
+- [x] `POST/DELETE /api/v1/watchlist/{movieId}`, `GET /api/v1/watchlist`
+- [x] `POST /api/v1/ratings/{movieId}`, `GET /api/v1/ratings`
+- [x] Watchlist toggle button + 5-star rating on movie detail page
+- [x] Watchlist page showing saved movies
+
+**Deliverable:** Users can register, login, save movies to watchlist, and rate them.
 
 ---
 
@@ -314,7 +326,7 @@ A full-stack movie discovery and tracking platform with AI-powered search, recom
 | 5 ✅ | Search & Filtering | 7 | DDB queries, debouncing, URL state |
 | 6 ✅ | AI Embeddings & Semantic Search | 8-9 | Embeddings, vector search, cosine similarity |
 | 7 ✅ | AI Chat & Discovery | 10-11 | RAG, SSE streaming, chat UX |
-| 8 | Auth, Watchlist, Ratings | 12-13 | Spring Security, JWT, user data in DDB |
+| 8 ✅ | Auth, Watchlist, Ratings | 12-13 | Spring Security, JWT, DDB user data |
 | 9 | Personal Stats & AI Insights | 14 | Aggregation, visualization, personalization |
 | 10 | Testing & Quality | 15 | Testing strategy, Testcontainers, Playwright |
 | 11 | Deploy, CI/CD & Portfolio Polish | 16-17 | CI/CD, Docker, CDK, production deployment |

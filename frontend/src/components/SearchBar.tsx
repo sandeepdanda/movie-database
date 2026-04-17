@@ -56,7 +56,7 @@ export function SearchBar() {
           {results.map(movie => (
             <Link
               key={movie.id}
-              to={`/movies/${movie.id}`}
+              to={`/movie/${movie.id}`}
               onClick={() => { setOpen(false); setQuery(''); }}
               className="flex items-center gap-3 px-3 py-2 hover:bg-zinc-800 transition"
             >

@@ -15,7 +15,7 @@ export function MovieCard({ movie }: { movie: MovieSummary }) {
   const hasPoster = movie.posterUrl && movie.posterUrl !== '';
 
   return (
-    <Link to={`/movies/${movie.id}`} className="group">
+    <Link to={`/movie/${movie.id}`} className="group">
       <div className="aspect-[2/3] rounded-lg overflow-hidden mb-2 group-hover:ring-2 ring-white/30 transition">
         {hasPoster ? (
           <img

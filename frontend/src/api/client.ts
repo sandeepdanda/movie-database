@@ -2,11 +2,42 @@ import type { MovieResponse, MovieSummary, PersonResponse } from './types';
 
 const BASE = '/api/v1';
 
+function getToken() {
+  const stored = localStorage.getItem('user');
+  if (stored) return JSON.parse(stored).token;
+  return null;
+}
+
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);
-  if (!res.ok) {
-    throw new Error(`API error: ${res.status}`);
-  }
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
+
+async function authGet<T>(path: string): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
+
+async function authPost(path: string, body: object) {
+  const res = await fetch(`${BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+}
+
+async function authDelete(path: string) {
+  const res = await fetch(`${BASE}${path}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${getToken()}` },
+  });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
 }
 
@@ -37,4 +68,13 @@ export const api = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message }),
   }),
+
+  // Watchlist (auth required)
+  getWatchlist: () => authGet<{ movieId: string; movieTitle: string; createdAt: string }[]>('/watchlist'),
+  addToWatchlist: (movieId: string, movieTitle: string) => authPost(`/watchlist/${movieId}`, { movieTitle }),
+  removeFromWatchlist: (movieId: string) => authDelete(`/watchlist/${movieId}`),
+
+  // Ratings (auth required)
+  getRatings: () => authGet<{ movieId: string; movieTitle: string; rating: number; createdAt: string }[]>('/ratings'),
+  rateMovie: (movieId: string, movieTitle: string, rating: number) => authPost(`/ratings/${movieId}`, { movieTitle, rating }),
 };
