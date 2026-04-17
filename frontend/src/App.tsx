@@ -29,27 +29,35 @@ function Nav() {
   }, [light]);
 
   return (
-    <nav className="border-b border-zinc-800 bg-zinc-950 px-6 py-4">
-      <div className="mx-auto flex max-w-6xl items-center justify-between">
-        <Link to="/" className="text-xl font-bold text-white">
-          🎬 Not Another Rewatch
+    <nav className="sticky top-0 z-40 glass px-6 py-4">
+      <div className="mx-auto flex max-w-7xl items-center justify-between">
+        <Link to="/" className="flex items-center gap-2 group">
+          <span className="text-2xl">🎬</span>
+          <span className="serif text-xl text-cream group-hover:text-amber transition-colors">
+            Not Another Rewatch
+          </span>
         </Link>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-5 text-sm">
           <SearchBar />
-          <Link to="/" className="text-zinc-400 hover:text-white">Home</Link>
-          <Link to="/browse" className="text-zinc-400 hover:text-white">Browse</Link>
-          <Link to="/chat" className="text-zinc-400 hover:text-white">Chat</Link>
+          <Link to="/" className="text-warm hover:text-cream transition-colors">Home</Link>
+          <Link to="/browse" className="text-warm hover:text-cream transition-colors">Browse</Link>
+          <Link to="/chat" className="text-warm hover:text-cream transition-colors">Chat</Link>
           {user ? (
             <>
-              <Link to="/watchlist" className="text-zinc-400 hover:text-white">Watchlist</Link>
-              <Link to="/stats" className="text-zinc-400 hover:text-white">Stats</Link>
-              <span className="text-sm text-zinc-400">{user.username}</span>
-              <button onClick={logout} className="text-sm text-zinc-500 hover:text-white">Logout</button>
+              <Link to="/watchlist" className="text-warm hover:text-cream transition-colors">Watchlist</Link>
+              <Link to="/stats" className="text-warm hover:text-cream transition-colors">Stats</Link>
+              <span className="text-muted">·</span>
+              <span className="text-warm">{user.username}</span>
+              <button onClick={logout} className="text-muted hover:text-cream transition-colors cursor-pointer">
+                Logout
+              </button>
             </>
           ) : (
-            <Link to="/login" className="text-sm text-blue-400 hover:text-blue-300">Sign In</Link>
+            <Link to="/login" className="text-amber hover:text-warm transition-colors">Sign In</Link>
           )}
-          <button onClick={() => setLight(!light)} className="text-sm text-zinc-500 hover:text-white">
+          <button onClick={() => setLight(!light)}
+            className="text-muted hover:text-amber transition-colors cursor-pointer text-base"
+            title="Toggle theme">
             {light ? '🌙' : '☀️'}
           </button>
         </div>
@@ -63,9 +71,9 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrowserRouter>
-          <div className="min-h-screen bg-zinc-950 text-zinc-100">
+          <div className="grain min-h-screen bg-primary text-cream">
             <Nav />
-            <main className="mx-auto max-w-6xl px-6 py-8">
+            <main className="mx-auto max-w-7xl px-6 py-12 relative z-10">
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/browse" element={<BrowsePage />} />
@@ -73,13 +81,14 @@ export default function App() {
                 <Route path="/persons/:id" element={<PersonPage />} />
                 <Route path="/chat" element={<ChatPage />} />
                 <Route path="/login" element={<LoginPage />} />
-              <Route path="/watchlist" element={<WatchlistPage />} />
-              <Route path="/stats" element={<StatsPage />} />
-              <Route path="*" element={<NotFoundPage />} />
+                <Route path="/watchlist" element={<WatchlistPage />} />
+                <Route path="/stats" element={<StatsPage />} />
+                <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </main>
-            <footer className="border-t border-zinc-800 py-6 text-center text-sm text-zinc-600">
-              Made with ❤️ and way too much caffeine · No movies were rewatched in the making of this app 🍿
+            <footer className="relative z-10 border-t border-warm py-8 text-center text-sm text-muted">
+              <p className="serif italic">Made with ❤️ and more caffeine than medically advisable</p>
+              <p className="mt-1">No movies were rewatched in the making of this app 🍿</p>
             </footer>
           </div>
         </BrowserRouter>

@@ -1,38 +1,188 @@
 @import "tailwindcss";
 
+/* ===================================
+   Design Tokens - "The Cookbook"
+   Warm, editorial, restaurant-inspired
+   =================================== */
+:root {
+  /* Palette */
+  --bg-primary: #0a0f1a;      /* deep navy - the base */
+  --bg-secondary: #121828;    /* slightly lighter navy */
+  --bg-tertiary: #1a2337;     /* card backgrounds */
+  --bg-elevated: #222c44;     /* hover states */
+
+  --accent: #f59e0b;          /* warm amber */
+  --accent-soft: #fbbf24;     /* lighter amber for hover */
+  --accent-dim: #78350f;      /* amber on dark */
+
+  --sage: #6b8f71;            /* muted sage secondary */
+  --burgundy: #991b37;        /* deep red accent */
+
+  --text-primary: #faf5eb;    /* soft cream - reads warmer than white */
+  --text-secondary: #b8a888;  /* warm beige */
+  --text-muted: #6b6658;      /* muted for timestamps, labels */
+
+  --border: #2a3550;
+  --border-soft: rgba(245, 158, 11, 0.15);
+
+  /* Typography */
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Shadows */
+  --shadow-glow: 0 0 40px rgba(245, 158, 11, 0.1);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Light mode */
+.light {
+  --bg-primary: #faf5eb;
+  --bg-secondary: #f0e9da;
+  --bg-tertiary: #ffffff;
+  --bg-elevated: #f7f1e3;
+  --text-primary: #1a2337;
+  --text-secondary: #4a5568;
+  --text-muted: #9b8a6a;
+  --border: #d4c4a0;
+  --border-soft: rgba(245, 158, 11, 0.3);
+}
+
+/* ===================================
+   Base styles
+   =================================== */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01", "ss03";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+/* ===================================
+   Utility classes - reusable high-end effects
+   =================================== */
+.serif { font-family: var(--font-serif); }
+.sans { font-family: var(--font-sans); }
+
+.bg-primary { background-color: var(--bg-primary); }
+.bg-secondary { background-color: var(--bg-secondary); }
+.bg-tertiary { background-color: var(--bg-tertiary); }
+.bg-elevated { background-color: var(--bg-elevated); }
+
+.text-cream { color: var(--text-primary); }
+.text-warm { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+.text-amber { color: var(--accent); }
+
+.border-warm { border-color: var(--border); }
+.border-amber { border-color: var(--border-soft); }
+
+/* Glass effect - for nav bars and overlays */
+.glass {
+  background: rgba(10, 15, 26, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-soft);
+}
+.light .glass {
+  background: rgba(250, 245, 235, 0.7);
+}
+
+/* Grain texture overlay - adds subtle warmth */
+.grain::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: overlay;
+}
+
+/* Amber glow for accent elements */
+.glow-amber {
+  box-shadow: 0 0 0 1px var(--border-soft), var(--shadow-glow);
+}
+
+/* ===================================
+   Animations
+   =================================== */
+
 /* Spinner */
 .spinner {
-  width: 24px;
-  height: 24px;
-  border: 3px solid #3f3f46;
-  border-top-color: #3b82f6;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
   border-radius: 50%;
-  animation: spin 0.6s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Fade-in on scroll */
+.fade-in {
+  animation: fade-in 0.6s ease-out;
+}
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(1rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Staggered children */
+.stagger > * {
+  animation: fade-in 0.5s ease-out backwards;
+}
+.stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger > *:nth-child(6) { animation-delay: 0.3s; }
+.stagger > *:nth-child(7) { animation-delay: 0.35s; }
+.stagger > *:nth-child(8) { animation-delay: 0.4s; }
+.stagger > *:nth-child(n+9) { animation-delay: 0.45s; }
 
 /* Toast */
 .toast {
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
-  padding: 0.75rem 1.25rem;
-  border-radius: 0.75rem;
+  padding: 0.875rem 1.5rem;
+  border-radius: 0.5rem;
   font-size: 0.875rem;
   font-weight: 500;
+  font-family: var(--font-sans);
   z-index: 50;
-  animation: toast-in 0.3s ease, toast-out 0.3s ease 2.7s forwards;
+  backdrop-filter: blur(8px);
+  animation: toast-in 0.3s cubic-bezier(0.16, 1, 0.3, 1), toast-out 0.3s ease 2.7s forwards;
 }
-.toast-success { background: #166534; color: #bbf7d0; }
-.toast-error { background: #991b1b; color: #fecaca; }
-@keyframes toast-in { from { opacity: 0; transform: translateY(1rem); } to { opacity: 1; transform: translateY(0); } }
-@keyframes toast-out { from { opacity: 1; } to { opacity: 0; } }
+.toast-success {
+  background: rgba(107, 143, 113, 0.9);
+  color: #faf5eb;
+  border: 1px solid rgba(107, 143, 113, 0.3);
+}
+.toast-error {
+  background: rgba(153, 27, 55, 0.9);
+  color: #faf5eb;
+  border: 1px solid rgba(153, 27, 55, 0.3);
+}
+@keyframes toast-in { from { opacity: 0; transform: translateY(2rem); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toast-out { from { opacity: 1; } to { opacity: 0; transform: translateY(1rem); } }
 
-/* Light mode overrides */
-.light { --bg: #f4f4f5; --text: #18181b; --card: #ffffff; --border: #e4e4e7; --muted: #71717a; }
-.light body, .light .bg-zinc-950 { background-color: var(--bg) !important; color: var(--text) !important; }
-.light .bg-zinc-900 { background-color: var(--card) !important; border: 1px solid var(--border); }
-.light .bg-zinc-800 { background-color: #e4e4e7 !important; color: #18181b !important; }
-.light .text-zinc-400, .light .text-zinc-500 { color: var(--muted) !important; }
-.light .text-white, .light .text-zinc-100, .light .text-zinc-200, .light .text-zinc-300 { color: var(--text) !important; }
-.light .border-zinc-800 { border-color: var(--border) !important; }
+/* Shimmer loading */
+.shimmer {
+  background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-elevated) 50%, var(--bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
