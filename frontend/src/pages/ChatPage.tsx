@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import type { MovieSummary } from '../api/types';
 
@@ -23,10 +23,21 @@ export function ChatPage() {
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Auto-send from ?q= URL param (e.g. from mood board clicks)
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q && messages.length === 0 && !streaming) {
+      send(q);
+      setSearchParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function send(text: string) {
     if (!text.trim() || streaming) return;
@@ -107,12 +118,13 @@ export function ChatPage() {
       <div className="flex-1 overflow-y-auto space-y-4 pb-4">
         {messages.length === 0 && (
           <div className="text-center pt-20">
-            <h2 className="text-2xl font-bold mb-2">🎬 Movie Discovery Chat</h2>
-            <p className="text-zinc-400 mb-8">Describe what you're in the mood for</p>
-            <div className="flex flex-wrap justify-center gap-2">
+            <p className="text-xs tracking-[0.3em] uppercase text-amber mb-3">The Sommelier</p>
+            <h2 className="serif text-4xl text-cream mb-3">What's Your Mood Tonight?</h2>
+            <p className="text-warm mb-8 max-w-md mx-auto">Tell me what you're craving. I'll pour something to match.</p>
+            <div className="flex flex-wrap justify-center gap-2 max-w-xl mx-auto">
               {SUGGESTIONS.map(s => (
                 <button key={s} onClick={() => send(s)}
-                  className="rounded-full bg-zinc-800 px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-700 transition">
+                  className="rounded-full bg-tertiary border border-warm px-4 py-2 text-sm text-warm hover:border-amber-500/40 hover:text-cream transition-all cursor-pointer">
                   {s}
                 </button>
               ))}
@@ -122,20 +134,22 @@ export function ChatPage() {
 
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-2xl rounded-2xl px-4 py-3 ${
-              msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-200'
+            <div className={`max-w-2xl rounded-2xl px-5 py-3 ${
+              msg.role === 'user'
+                ? 'bg-amber-500/90 text-[#0a0f1a]'
+                : 'bg-tertiary text-cream border border-warm'
             }`}>
-              <p className="whitespace-pre-wrap text-sm">{msg.text}</p>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.text}</p>
               {msg.movies && msg.movies.length > 0 && (
-                <div className="grid grid-cols-5 gap-2 mt-3">
+                <div className="grid grid-cols-5 gap-2 mt-4">
                   {msg.movies.map(m => (
                     <Link key={m.id} to={`/movie/${m.id}`} className="group">
                       {m.posterUrl ? (
                         <img src={`${TMDB_IMG}/w154${m.posterUrl}`} alt={m.title}
-                          className="rounded w-full group-hover:ring-2 ring-blue-500 transition" />
+                          className="rounded w-full group-hover:ring-2 ring-amber-500/50 transition" />
                       ) : (
-                        <div className="aspect-[2/3] rounded bg-zinc-700 flex items-center justify-center">
-                          <span className="text-xs text-zinc-400">{m.title.slice(0, 10)}</span>
+                        <div className="aspect-[2/3] rounded bg-elevated flex items-center justify-center">
+                          <span className="text-xs text-muted">{m.title.slice(0, 10)}</span>
                         </div>
                       )}
                     </Link>
@@ -149,14 +163,14 @@ export function ChatPage() {
       </div>
 
       {/* Input */}
-      <div className="border-t border-zinc-800 p-4">
+      <div className="border-t border-warm p-4">
         <form onSubmit={e => { e.preventDefault(); send(input); }} className="flex gap-2">
           <input value={input} onChange={e => setInput(e.target.value)}
             placeholder="Describe what you want to watch..."
             disabled={streaming}
-            className="flex-1 rounded-xl bg-zinc-800 px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none focus:ring-2 ring-blue-500" />
+            className="flex-1 rounded-full bg-tertiary border border-warm px-5 py-3 text-sm text-cream placeholder-muted outline-none focus:border-amber-500/40 transition-all" />
           <button type="submit" disabled={streaming || !input.trim()}
-            className="rounded-xl bg-blue-600 px-6 py-3 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50 transition">
+            className="rounded-full bg-amber-500 hover:bg-amber-400 px-6 py-3 text-sm font-medium text-[#0a0f1a] disabled:opacity-50 transition-all cursor-pointer">
             Send
           </button>
         </form>
