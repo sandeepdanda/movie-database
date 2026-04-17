@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { MovieCard } from '../components/MovieCard';
+import { MovieCardSkeletonGrid } from '../components/MovieCardSkeleton';
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p';
 
@@ -166,7 +167,7 @@ export function HomePage() {
           <h2 className="serif text-3xl text-cream">Explore the archive</h2>
         </div>
 
-        {isLoading && <div className="flex justify-center py-20"><div className="spinner" /></div>}
+        {isLoading && <MovieCardSkeletonGrid count={10} />}
 
         <motion.div
           variants={container}

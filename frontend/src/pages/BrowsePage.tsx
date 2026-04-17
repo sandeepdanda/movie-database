@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { api } from '../api/client';
 import { MovieCard } from '../components/MovieCard';
+import { MovieCardSkeletonGrid } from '../components/MovieCardSkeleton';
 
 const DECADES = ['2020s', '2010s', '2000s', '1990s', '1980s', '1970s'];
 
@@ -152,7 +153,7 @@ export function BrowsePage() {
       </div>
 
       {/* Grid */}
-      {isLoading && <div className="flex justify-center py-20"><div className="spinner" /></div>}
+      {isLoading && <MovieCardSkeletonGrid count={15} />}
 
       <motion.div
         key={`${genre}-${decade}-${sort}`}
