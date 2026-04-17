@@ -31,6 +31,7 @@ public class SecurityConfig {
                         // Protected: watchlist, ratings
                         .requestMatchers("/api/v1/watchlist/**").authenticated()
                         .requestMatchers("/api/v1/ratings/**").authenticated()
+                        .requestMatchers("/api/v1/stats/**").authenticated()
                         // Public: all other GET endpoints, auth, chat, search
                         .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()

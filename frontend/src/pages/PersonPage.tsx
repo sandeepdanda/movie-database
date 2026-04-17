@@ -11,7 +11,7 @@ export function PersonPage() {
     enabled: !!id,
   });
 
-  if (isLoading) return <p className="text-zinc-500">Loading...</p>;
+  if (isLoading) return <div className="flex justify-center py-20"><div className="spinner" /></div>;
   if (!person) return <p className="text-zinc-500">Person not found.</p>;
 
   return (

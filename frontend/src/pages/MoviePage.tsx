@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { MovieCard } from '../components/MovieCard';
+import { toast } from '../utils/toast';
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p';
 
@@ -38,9 +39,11 @@ export function MoviePage() {
     if (inWatchlist) {
       await api.removeFromWatchlist(id);
       setInWatchlist(false);
+      toast('Removed from watchlist');
     } else {
       await api.addToWatchlist(id, movie.title);
       setInWatchlist(true);
+      toast('Added to watchlist!');
     }
   }
 
@@ -48,9 +51,10 @@ export function MoviePage() {
     if (!movie || !id) return;
     await api.rateMovie(id, movie.title, rating);
     setUserRating(rating);
+    toast(`Rated ${rating} ★`);
   }
 
-  if (isLoading) return <p className="text-zinc-500">Loading...</p>;
+  if (isLoading) return <div className="flex justify-center py-20"><div className="spinner" /></div>;
   if (!movie) return <p className="text-zinc-500">Movie not found.</p>;
 
   const director = movie.crew.find(c => c.job === 'Director');
@@ -87,7 +91,7 @@ export function MoviePage() {
           {user && (
             <div className="flex items-center gap-4 mb-4">
               <button onClick={toggleWatchlist}
-                className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                className={`rounded-lg px-4 py-2 text-sm font-medium cursor-pointer transition ${
                   inWatchlist ? 'bg-green-600 text-white' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}>
                 {inWatchlist ? '✓ In Watchlist' : '+ Watchlist'}
               </button>

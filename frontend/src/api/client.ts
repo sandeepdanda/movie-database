@@ -77,4 +77,11 @@ export const api = {
   // Ratings (auth required)
   getRatings: () => authGet<{ movieId: string; movieTitle: string; rating: number; createdAt: string }[]>('/ratings'),
   rateMovie: (movieId: string, movieTitle: string, rating: number) => authPost(`/ratings/${movieId}`, { movieTitle, rating }),
+
+  // Stats (auth required)
+  getStats: () => authGet<{
+    totalRated: number; totalWatchlist: number; averageRating: number;
+    ratingDistribution: Record<string, number>;
+    topGenres: { genre: string; count: number }[];
+  }>('/stats'),
 };

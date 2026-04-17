@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './auth/AuthContext';
@@ -8,6 +9,7 @@ import { PersonPage } from './pages/PersonPage';
 import { ChatPage } from './pages/ChatPage';
 import { LoginPage } from './pages/LoginPage';
 import { WatchlistPage } from './pages/WatchlistPage';
+import { StatsPage } from './pages/StatsPage';
 import { SearchBar } from './components/SearchBar';
 import './index.css';
 
@@ -19,6 +21,11 @@ const queryClient = new QueryClient({
 
 function Nav() {
   const { user, logout } = useAuth();
+  const [light, setLight] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('light', light);
+  }, [light]);
 
   return (
     <nav className="border-b border-zinc-800 bg-zinc-950 px-6 py-4">
@@ -34,12 +41,16 @@ function Nav() {
           {user ? (
             <>
               <Link to="/watchlist" className="text-zinc-400 hover:text-white">Watchlist</Link>
+              <Link to="/stats" className="text-zinc-400 hover:text-white">Stats</Link>
               <span className="text-sm text-zinc-400">{user.username}</span>
               <button onClick={logout} className="text-sm text-zinc-500 hover:text-white">Logout</button>
             </>
           ) : (
             <Link to="/login" className="text-sm text-blue-400 hover:text-blue-300">Sign In</Link>
           )}
+          <button onClick={() => setLight(!light)} className="text-sm text-zinc-500 hover:text-white">
+            {light ? '🌙' : '☀️'}
+          </button>
         </div>
       </div>
     </nav>
@@ -62,6 +73,7 @@ export default function App() {
                 <Route path="/chat" element={<ChatPage />} />
                 <Route path="/login" element={<LoginPage />} />
               <Route path="/watchlist" element={<WatchlistPage />} />
+              <Route path="/stats" element={<StatsPage />} />
               </Routes>
             </main>
           </div>

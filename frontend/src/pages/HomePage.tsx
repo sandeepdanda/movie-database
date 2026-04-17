@@ -13,7 +13,7 @@ export function HomePage() {
       <h1 className="text-3xl font-bold mb-2">Top Rated Movies</h1>
       <p className="text-zinc-400 mb-8">The best of the best, sorted by rating.</p>
 
-      {isLoading && <p className="text-zinc-500">Loading...</p>}
+      {isLoading && <div className="flex justify-center py-20"><div className="spinner" /></div>}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {movies?.map(movie => (

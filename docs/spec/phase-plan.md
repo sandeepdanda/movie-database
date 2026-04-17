@@ -265,19 +265,24 @@ A full-stack movie discovery and tracking platform with AI-powered search, recom
 
 ---
 
-## Phase 9: Personal Stats & AI Insights (week 14)
+## Phase 9: Personal Stats & UI Polish (week 14) ✅
+
+**Status:** Complete (2026-04-17). AI taste profile and Letterboxd import deferred.
 
 **Goal:** "Your year in movies" - personalized analytics.
 
 **Tasks:**
-- Backend: stats aggregation (genre breakdown, rating distribution, streaks)
-- AI taste profile from user's ratings
-- Frontend: stats dashboard with charts
-- Letterboxd CSV import
+- [x] Backend: `GET /api/v1/stats` - aggregates ratings, watchlist, genre breakdown
+- [x] Frontend: stats dashboard with summary cards and bar charts
+- [x] Watchlist remove button with instant refresh
+- [x] Dark/Light mode toggle (☀️/🌙)
+- [x] Loading spinners replacing "Loading..." text
+- [x] Toast notifications for watchlist/rating actions
+- [x] Fixed all frontend route links (standardized to /movie/)
+- [ ] AI taste profile from user's ratings (deferred)
+- [ ] Letterboxd CSV import (deferred)
 
-**Deliverable:** Rich personal stats. AI understands your taste.
-
-**Learning focus:** Data aggregation in DynamoDB, data visualization, personalization with embeddings.
+**Deliverable:** Stats dashboard, polished UI with dark mode, toasts, and spinners.
 
 ---
 
@@ -327,7 +332,7 @@ A full-stack movie discovery and tracking platform with AI-powered search, recom
 | 6 ✅ | AI Embeddings & Semantic Search | 8-9 | Embeddings, vector search, cosine similarity |
 | 7 ✅ | AI Chat & Discovery | 10-11 | RAG, SSE streaming, chat UX |
 | 8 ✅ | Auth, Watchlist, Ratings | 12-13 | Spring Security, JWT, DDB user data |
-| 9 | Personal Stats & AI Insights | 14 | Aggregation, visualization, personalization |
+| 9 ✅ | Personal Stats & UI Polish | 14 | Aggregation, dark mode, toasts, spinners |
 | 10 | Testing & Quality | 15 | Testing strategy, Testcontainers, Playwright |
 | 11 | Deploy, CI/CD & Portfolio Polish | 16-17 | CI/CD, Docker, CDK, production deployment |
 | 12 | Deploy & Portfolio Polish | 18-19 | CI/CD, Docker, CDK, production ops |
