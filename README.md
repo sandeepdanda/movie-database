@@ -8,11 +8,12 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white" />
   <img src="https://img.shields.io/badge/Spring_Boot-3.5-6DB33F?logo=springboot&logoColor=white" />
   <img src="https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white" />
   <img src="https://img.shields.io/badge/DynamoDB-Single_Table-4053D6?logo=amazondynamodb&logoColor=white" />
   <img src="https://img.shields.io/badge/AI-Semantic_Search-FF6F61" />
+  <img src="https://img.shields.io/badge/Framer_Motion-Animations-0055FF?logo=framer&logoColor=white" />
 </p>
 
 ---
@@ -25,6 +26,8 @@ Every night, same ritual. Open Netflix. Scroll for 45 minutes. Pick Friends agai
 
 An app where you say *"dark crime thriller with plot twists"* and it actually understands what you mean. Not keyword matching. Not "because you watched Breaking Bad, here's a cooking show." Real, semantic understanding of movie vibes.
 
+But also - a movie app that doesn't look like every other movie app. Inspired by restaurant menus, wine tasting notes, and editorial magazines instead of streaming service grids.
+
 ---
 
 ## ✨ What You Can Do
@@ -32,11 +35,27 @@ An app where you say *"dark crime thriller with plot twists"* and it actually un
 | | Feature | How It Works |
 |---|---------|-------------|
 | 🔍 | **Semantic Search** | "movies about existential dread in space" → Interstellar #1 |
-| 💬 | **AI Chat** | Streaming recommendations with clickable poster cards |
-| ⭐ | **Rate & Track** | 5-star ratings, watchlist, personal stats dashboard |
-| 🧠 | **Similar Movies** | Every movie page shows AI-picked recommendations |
-| 🌙 | **Dark/Light Mode** | Because your eyes matter at 2am |
+| 💬 | **AI Sommelier Chat** | Streaming recommendations in a warm ambient chat interface |
+| 🎲 | **Surprise Me** | Random pick with gradient button animation |
+| 🌙 | **Mood Boards** | Click a mood tile ("Rainy Sunday", "Good Cry") → chat pre-filled |
+| ⭐ | **Rate & Track** | 5-star ratings with animated stars, watchlist, achievements |
+| 🏆 | **Achievements** | Unlock badges: 🍷 First Taste, 🥂 Connoisseur, 🏆 Sommelier |
+| 🧠 | **Similar Movies** | Every detail page shows AI-picked recommendations |
 | ⌨️ | **Keyboard First** | Press `/` to search from anywhere |
+
+---
+
+## 🎨 Design Language
+
+This isn't just another Netflix clone. The UI borrows from:
+
+- **Restaurant menus** → editorial headings ("The Tasting Menu", "The Cellar")
+- **Wine bar vibes** → deep navy + warm amber palette, Playfair Display serif
+- **Museum exhibits** → scroll-triggered fade-ins, parallax backdrops
+- **Magazine spreads** → drop caps, curated sections, generous whitespace
+- **Film grain** → subtle noise overlay for warmth
+
+Built with CSS variables (easy theming), Framer Motion (page transitions + physics), and Tailwind CSS 4.
 
 ---
 
@@ -55,12 +74,13 @@ graph LR
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 18, TypeScript, Vite, TanStack Query, Tailwind CSS |
+| Frontend | React 19, TypeScript, Vite, TanStack Query, Tailwind CSS, **Framer Motion** |
 | Backend | Java 21, Spring Boot 3.5, Spring Security, JWT |
 | Database | DynamoDB (single-table design, 2 tables, 3 GSIs) |
 | AI/ML | sentence-transformers all-MiniLM-L6-v2 (384-dim, free, local) |
 | Data | 45K+ movies from [Kaggle](https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset) + TMDB poster enrichment |
 | Infra | Docker Compose, LocalStack, GitHub Actions CI |
+| Typography | Playfair Display (serif) + Inter (sans) |
 
 ---
 
@@ -102,13 +122,15 @@ Open **localhost:5173** → search "movies about time travel" → enjoy.
 
 **4. Stream everything** — Chat responses arrive word-by-word via SSE. Swap in Groq or OpenAI later with a one-line change.
 
+**5. Feel premium, not like a database viewer** — Every page has a narrative (The Cellar, The Cookbook, The Wine List). Animations, typography, and color work together to make browsing feel curated instead of mechanical.
+
 ---
 
 ## 🧩 Project Structure
 
 ```
 not-another-rewatch/
-├── frontend/       React 18 + TypeScript + Tailwind
+├── frontend/       React 19 + TypeScript + Tailwind + Framer Motion
 ├── backend/        Spring Boot 3.5 + Spring Security
 ├── etl/            Data pipeline + embedding server
 ├── infra/docker/   Docker Compose + LocalStack

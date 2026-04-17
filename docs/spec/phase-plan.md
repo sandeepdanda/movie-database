@@ -1,542 +1,274 @@
-# Movie Database - Phase Plan
+# Not Another Rewatch - Phase Plan
 
-## Vision
+## What I'm Building
 
-A full-stack movie discovery and tracking platform with AI-powered search, recommendations, and conversational movie discovery. Built with React/TypeScript, Java/Spring Boot, and DynamoDB - the same stack used at work, so every hour spent here compounds into professional growth.
+A movie app that helps you actually find something to watch. You can search by title, describe a mood ("something dark with plot twists"), or chat with it like a friend who's seen everything. You can rate movies, save a watchlist, and see stats on what you've been watching.
 
-## Tech Stack
+The whole point: stop opening Netflix and scrolling for 45 minutes before giving up and picking Friends again.
 
-| Layer | Choice | Notes |
-|-------|--------|-------|
-| Frontend | React 18 + TypeScript + Vite | TanStack Query + Router, Tailwind + shadcn/ui |
-| Backend | Java 21 + Spring Boot 3.5 | Virtual threads, records, Spring AI |
-| Database | DynamoDB (single-table design) | Hybrid 2-table: MovieCatalog + UserActivity |
-| Vector Search | In-memory cosine similarity (embeddings in JSON) | Upgrade to pgvector/Pinecone later if needed |
-| AI | sentence-transformers all-MiniLM-L6-v2 (free, local) | 384-dim embeddings, PyTorch on CPU |
-| Data Pipeline | Python (existing ETL, retargeted to DDB) | Pandas + boto3 |
-| Cache | Caffeine (in-process) | Upgrade to Redis later if needed |
-| Auth | JWT (Spring Security + jjwt) | Stateless, simple |
-| Containerization | Docker Compose | LocalStack for DDB, Spring Boot, React dev server |
-| CI/CD | GitHub Actions | Build, test (LocalStack), deploy |
-| Deploy | Render (backend) + Vercel (frontend) + AWS DDB free tier | ~$0-5/month |
+## Why I Picked This Stack
 
-## AI Cost Estimate
+React + TypeScript on the front, Java + Spring Boot on the back, DynamoDB underneath. Same stack my team uses at work, so every hour I spend on this makes me better at my day job too.
 
-| Item | Cost |
-|------|------|
-| Embed 600K movies (text-embedding-3-small, ~120M tokens) | ~$2.40 one-time |
-| Chat queries (gpt-4o-mini, ~$0.15/1M input tokens) | ~$1-3/month |
-| S3 Vectors storage (600K vectors, 1536 dims) | ~$2-5/month |
-| Total ongoing | ~$3-8/month |
+| Layer | What I Used | Why |
+|-------|-------------|-----|
+| Frontend | React 18, TypeScript, Vite, Tailwind, Framer Motion | Fast, typed, animated |
+| Backend | Java 21, Spring Boot 3.5 | Work stack, virtual threads |
+| Database | DynamoDB (2 tables, 3 GSIs) | Single-table design practice |
+| AI | sentence-transformers (local, free) | No API bills |
+| Infra | Docker Compose + LocalStack | Runs on my laptop |
+| CI | GitHub Actions | Free, simple |
+
+The AI runs on my CPU. No OpenAI key, no Pinecone, no monthly bills. Embeddings are 384 dimensions, the model is 80MB, and it works.
 
 ---
 
-## Phase 1: Project Setup & DynamoDB Design (week 1) ✅
+## Phase 1: Setup and Database Design ✅
 
-**Status:** Complete (2026-04-14)
+Got the monorepo going: backend, frontend, etl, infra. Docker Compose fires up LocalStack with DynamoDB, the Spring Boot server, and the React dev server all at once.
 
-**Goal:** Solid foundation - monorepo structure, Docker dev environment, DynamoDB table design.
+The interesting part was designing the DynamoDB schema. Two tables:
+- **MovieCatalog** holds everything about movies - the movie itself, cast, crew, genres, all in one table using different sort keys
+- **UserActivity** holds user stuff - watchlist, ratings, diary entries
 
-**Tasks:**
-- [x] Set up monorepo structure: `/backend` (Spring Boot), `/frontend` (React+TS), `/etl` (existing Python), `/infra` (Docker, IaC)
-- [x] Initialize Spring Boot project (Java 21, Spring Web, Spring AI, AWS SDK v2)
-- [x] Initialize React+TS project with Vite, TanStack Query, Tailwind, shadcn/ui
-- [x] Docker Compose: LocalStack (DynamoDB), Spring Boot, React dev server
-- [x] Design DynamoDB schema:
-  - **MovieCatalog table** (single-table): movies, genres, persons, cast, crew, companies, countries
-  - **UserActivity table**: watchlist, ratings, viewing diary
-  - 3 GSIs: entity lookup (genre/person/decade browsing), popularity/rating sorting, user-movie reverse lookup
-  - Document all access patterns and key designs
+Three GSIs to support different ways people look things up: by genre, by popularity, and reverse lookups from user to movie.
 
-**Deliverable:** `docker compose up` starts the full dev environment. DynamoDB tables created via LocalStack.
-
-**Notes:**
-- Spring Boot 3.5.0 (3.4.x no longer on Spring Initializr)
-- LocalStack pinned to 3.8 (latest requires paid license now)
-- Java 21 managed via mise, scoped to project (.mise.toml)
-
-**Learning focus:** DynamoDB single-table design, access pattern thinking, adjacency list pattern for many-to-many relationships.
+**What I learned:** DynamoDB single-table design. You design around the queries, not around the data. Very different from SQL.
 
 ---
 
-## Phase 2: Data Pipeline - ETL to DynamoDB (week 2) ✅
+## Phase 2: Loading the Data ✅
 
-**Status:** Complete (2026-04-14). Full load pending (~2hrs against LocalStack).
+Took 45K movies from a Kaggle dataset and wrote them into DynamoDB. The Python ETL script transforms each movie into about 17 different DynamoDB items - one for the movie itself, one per cast member, one per crew member, plus reverse indexes so you can query "all movies with this actor."
 
-**Goal:** Get 600K+ movies loaded into DynamoDB with the denormalized schema.
+Ended up with 758K items in the database from 45K movies. That's what denormalization looks like in practice.
 
-**Tasks:**
-- [x] Modify Python ETL `load.py` to write to DynamoDB (boto3 batch_write_item)
-- [x] Transform relational data into DynamoDB items:
-  - Movie metadata: `PK=MOVIE#<id>, SK=METADATA`
-  - Cast: `PK=MOVIE#<id>, SK=CAST#<order>#<personId>`
-  - Crew: `PK=MOVIE#<id>, SK=CREW#<dept>#<personId>`
-  - Genre mapping: `PK=MOVIE#<id>, SK=GENRE#<name>`
-  - Person reverse index: `PK=PERSON#<id>, SK=MOVIE#<movieId>`
-  - Genre reverse index: `PK=GENRE#<name>, SK=MOVIE#<movieId>`
-- [x] Handle batch write limits (25 items per batch, dedup per batch)
-- [x] Validate data integrity: count checks, spot-check queries
-- [x] Write a simple verification script that queries each access pattern
+**Gotchas I hit:**
+- LocalStack is slow. Full load takes about 2 hours. Had to run it with `nohup`.
+- Batch writes are capped at 25 items. If two items in the same batch have the same key, the whole batch fails. Had to dedupe within each batch.
+- Pandas returning a Series vs a dict in the transform broke cast parsing until I fixed it.
 
-**Deliverable:** 45K movies → 758K DynamoDB items. All 6 access patterns verified on test data. Full load runs clean (70K items loaded before timeout, no errors).
-
-**Notes:**
-- LocalStack is slow (~10K items/100s). Full load takes ~2hrs. Run with `nohup`.
-- Fixed pandas compat bug in transform.py (Series vs dict in extract_crew)
-- Fixed batch dedup: crew members with same person+department caused duplicate keys (777 caught)
-- Swapped requirements: sqlalchemy/psycopg2 → boto3
-
-**Learning focus:** DynamoDB batch operations, write throughput management, denormalization in practice (same data written multiple ways).
+**What I learned:** Batch writes, throughput limits, why denormalization means writing the same data 5 different ways.
 
 ---
 
-## Phase 3: Java API Foundation (weeks 3-4) ✅
+## Phase 3: The Java API ✅
 
-**Status:** Complete (2026-04-16). Cursor pagination, Swagger, and tests deferred to Phase 3b.
+Built the REST endpoints that serve movie data from DynamoDB. Used the Enhanced Client from AWS SDK v2 with `@DynamoDbBean` classes.
 
-**Goal:** Core REST API serving movie data from DynamoDB.
+Endpoints I shipped:
+- `GET /movies/{id}` - movie details with cast, crew, genres (one query on the partition key)
+- `GET /movies?genre=X` - filter by genre (GSI1 query)
+- `GET /movies?decade=X` - filter by decade (GSI1 query)
+- `GET /movies?sort=rating` - sorted lists (GSI2 query)
+- `GET /persons/{id}` - filmography for an actor/director
+- `GET /genres` - list all genres
 
-**Tasks:**
-- [x] Project structure: package-by-feature (`movie/`, `config/`)
-- [x] DynamoDB Enhanced Client setup with `@DynamoDbBean` entity classes
-- [x] Repository layer wrapping DynamoDbTable operations
-- [x] Core endpoints:
-  - [x] `GET /api/v1/movies/{id}` - movie details with cast, crew, genres (single Query on PK)
-  - [x] `GET /api/v1/movies?genre={name}` - filter by genre (GSI1 query)
-  - [x] `GET /api/v1/movies?decade={decade}` - filter by decade (GSI1 query)
-  - [x] `GET /api/v1/movies?sort=rating|popularity` - sorted lists (GSI2 query)
-  - [x] `GET /api/v1/persons/{id}` - person details with filmography (GSI1 query)
-  - [x] `GET /api/v1/genres` - list all genres
-- [x] Global exception handler with consistent error responses
-- [x] Caffeine cache for hot movie data (30min TTL, 10K max entries)
-- [ ] `GET /api/v1/movies` - cursor-based pagination (deferred)
-- [ ] OpenAPI docs via springdoc-openapi (deferred)
-- [ ] Unit tests / integration tests (deferred)
+Added Caffeine cache in front of hot data - 30 minute TTL, 10K entries. Helps a lot on repeated movie detail lookups.
 
-**Notes:**
-- Spring Boot 3.5.0 with Java 21 virtual threads
-- Fixed @DynamoDbAttribute case mismatch (PK vs pk) - Enhanced Client defaults to lowercase
-- Added personName to GSI1 projection for person filmography lookup
-- AWS SDK BOM 2.31.1 for version management
+**Deferred:** cursor pagination, Swagger docs, and proper unit tests. Will come back in Phase 3b.
 
-**Learning focus:** Spring Boot REST patterns, AWS SDK v2 Enhanced Client, cursor-based pagination with DynamoDB, Testcontainers.
+**Gotcha:** The Enhanced Client defaults to lowercase attribute names. I had `PK` in my table but the bean was looking for `pk`. Silent failure until I traced it.
+
+**What I learned:** Spring Boot REST patterns, AWS SDK v2, how the Enhanced Client maps objects to DynamoDB.
 
 ---
 
-## Phase 4: React Frontend Foundation (weeks 5-6) ✅
+## Phase 4: The Frontend ✅
 
-**Status:** Complete (2026-04-16). Skeleton loading, dark mode, responsive polish deferred.
+React + TypeScript + Tailwind + TanStack Query. Built the main pages:
+- Home page with a grid of top rated movies
+- Movie detail page with overview, cast, crew, stats
+- Browse page with genre chips and decade filters
+- Person page with filmography
 
-**Goal:** Movie browsing UI - the visual layer that makes the project demoable.
+Then pulled in real posters from TMDB. The Python script (`enrich_posters.py`) fetches poster URLs and adds them to DynamoDB. Replaced all the colored placeholder boxes with actual movie posters.
 
-### Phase 4a: Setup & API Layer ✅
-- [x] Tailwind CSS + Vite plugin setup
-- [x] React Router for page routing
-- [x] TanStack Query for data fetching
-- [x] Typed API client layer (fetch calls matching backend endpoints)
+**Deferred:** skeleton loading states, dark mode, more responsive polish. All came later.
 
-### Phase 4b: Core Pages ✅
-- [x] App shell: layout, navigation bar, routing
-- [x] Home page: top rated movies grid
-- [x] Movie detail page: overview, cast, crew, genres, stats
-- [x] Browse page: genre filter chips, decade filter, sort toggle
-- [x] Person page: filmography grid
-
-### Phase 4c: TMDB Posters & Visual Polish ✅
-
-**Status:** Complete (2026-04-16). Skeleton loading, dark mode, responsive polish deferred.
-
-- [x] TMDB API integration (poster URLs via enrich_posters.py)
-- [x] Real poster images replacing colored placeholders
-- [x] Movie detail page: poster + details side-by-side layout
-- [x] Lazy loading on poster images
-- [ ] Responsive polish, skeleton loading, dark mode (deferred)
-
-**Deliverable:** Browsable movie app with real posters, filtering, sorting. Looks good on mobile and desktop.
-
-**Learning focus:** React component architecture, TypeScript with React, TanStack Query patterns, responsive Tailwind layouts, third-party API integration.
+**What I learned:** TanStack Query is fantastic for API calls. It handles caching, loading states, and refetching without me writing any of it.
 
 ---
 
-## Phase 5: Search & Filtering (week 7) ✅
+## Phase 5: Search ✅
 
-**Status:** Complete (2026-04-16). Advanced filters and recent searches deferred.
+Simple title search first. When the server starts, it loads all movie metadata into memory (~5MB for 45K movies). Users type, the server does a `contains` match sorted by popularity.
 
-**Tasks:**
-- [x] Backend: `GET /api/v1/search?q={query}` endpoint (in-memory title index)
-- [x] In-memory title index loaded at startup (prefix + contains search, sorted by popularity)
-- [x] Frontend: search bar in header with instant results dropdown
-- [x] Debounced search (300ms) with minimum 2 characters
-- [x] Dropdown shows poster thumbnails, title, year, rating
-- [ ] Advanced filters: genre multi-select, year range, rating range (deferred)
-- [ ] Recent searches in localStorage (deferred)
+Added a debounced search bar in the header - waits 300ms after you stop typing, then shows a dropdown with posters, titles, years, ratings. Click one and you go straight to the movie page.
 
-**Notes:**
-- Used in-memory index instead of DynamoDB scan - loads all #METADATA items at startup (~5MB for 45K movies)
-- Contains search (not just prefix) sorted by popularity for better results
-- Phase 6 semantic search will replace this for natural language queries
+**Why in-memory instead of DynamoDB?** DynamoDB scans are slow and expensive. Loading everything into memory at startup is way faster for the size of dataset I have. Phase 6 replaces this with vector search anyway.
 
-**Learning focus:** DynamoDB query vs scan vs filter expressions, debouncing in React, URL state management.
+**What I learned:** Debouncing in React, when to use in-memory indexes vs hitting the database every time.
 
 ---
 
-## Phase 6: AI - Embeddings & Semantic Search (weeks 8-9) ✅
+## Phase 6: Semantic Search ✅
 
-**Status:** Complete (2026-04-16). Hybrid search deferred.
+This is where it gets fun. "Movies about loneliness in space" should return Interstellar, not nothing.
 
-**Goal:** "Movies about loneliness in space" actually works.
+How it works:
+1. Python script generates embeddings for every movie (title + overview → 384-dim vector). Uses sentence-transformers all-MiniLM-L6-v2. Free, local, runs on CPU.
+2. Spring Boot loads all those vectors into memory at startup
+3. When a user searches, a separate Python server embeds their query into a vector
+4. Java does cosine similarity between the query vector and every movie vector
+5. Returns the top matches
 
-**Tasks:**
-- [x] Python script: generate embeddings for all movies (sentence-transformers all-MiniLM-L6-v2, free, local)
-- [x] Backend: semantic search endpoint `GET /api/v1/search/semantic?q={query}`
-- [x] Backend: VectorSearchIndex - in-memory cosine similarity search
-- [x] Backend: embedding_server.py - Python HTTP server for query embedding (port 8081)
-- [x] Frontend: toggle between "Title search" and "AI search"
-- [ ] Backend: similar movies endpoint `GET /api/v1/movies/{id}/similar` (deferred)
-- [ ] Hybrid search: combine title prefix match + semantic results (deferred)
+**Why two processes?** I tried Spring AI with ONNX first. Failed because my Amazon Linux 2 box has GLIBC 2.26 and ONNX needs 2.27+. So I spun up a tiny Python HTTP server on port 8081 that just embeds queries. Java calls it over HTTP.
 
-**Notes:**
-- Spring AI ONNX approach failed: AL2 has GLIBC 2.26, ONNX runtime needs 2.27+
-- Switched to Python embedding server (sentence-transformers uses PyTorch, no GLIBC issue)
-- 384-dim embeddings, ~80MB model, runs on CPU
-- Tested: "space exploration" → Interstellar #1, "dark crime thriller" → Dark Knight #1
-- Only 10 test movies embedded; full 45K dataset embedding pending
+Results are good: "space exploration" → Interstellar #1, "dark crime thriller" → Dark Knight #1.
 
-**Deliverable:** Semantic search that understands natural language queries.
-
-**Learning focus:** Embeddings, vector similarity search, cosine similarity, model selection (ONNX vs PyTorch), GLIBC compatibility.
+**What I learned:** Embeddings, cosine similarity, why GLIBC versions matter, when to use PyTorch vs ONNX.
 
 ---
 
-## Phase 7: AI - Movie Discovery Chat (weeks 10-11) ✅
+## Phase 7: Chat with an AI Sommelier ✅
 
-**Status:** Complete (2026-04-16). Real LLM integration deferred (swap in Groq/OpenAI later).
+Built a chat endpoint that streams responses word-by-word using Server-Sent Events (SSE).
 
-**Goal:** Conversational AI that helps users discover movies.
+How it works (RAG pipeline):
+1. User types a message
+2. Embed the message into a vector
+3. Do semantic search for relevant movies
+4. Build a response using the matches
 
-### Phase 7a: Similar Movies ✅
-- [x] Backend: `GET /api/v1/movies/{id}/similar` - cosine similarity on pre-computed embeddings
-- [x] Frontend: "Similar Movies" section on movie detail page
+Right now there's no LLM - it's template-based. That was intentional. The plumbing for real LLM calls is all there (SSE streaming, message formatting), so swapping in Groq or OpenAI later is a one-line change.
 
-### Phase 7b: Chat Backend with RAG ✅
-- [x] Backend: `POST /api/v1/chat` endpoint with SSE streaming
-- [x] RAG pipeline: user message → embed query → semantic search → build response with movie context
-- [x] Template-based response (no LLM - swap in Groq/OpenAI as drop-in later)
+The frontend shows messages appearing word-by-word, plus clickable movie poster cards in the chat. Suggested prompts on empty state so people know what to ask.
 
-### Phase 7c: Chat Frontend ✅
-- [x] Chat panel UI with streaming word-by-word display
-- [x] Inline movie poster cards (clickable → movie detail page)
-- [x] Suggested prompt chips on empty state
-
-**Notes:**
-- No LLM needed for v1 - template builds structured response from semantic search results
-- SSE streaming plumbing ready for real LLM (just replace buildResponse() with API call)
-- Ollama won't run on AL2 (GLIBC 2.26 too old) - use Groq free tier when ready
-- etl/setup.sh created to run all data loading steps in one shot
-
-**Deliverable:** Working movie chatbot with streaming responses and clickable movie cards.
+**Why no LLM yet?** Ollama won't run on my box (GLIBC again). Groq has a free tier but I wanted to ship the UX first. When I'm ready, it's drop-in.
 
 ---
 
-## Phase 8: User Features - Auth, Watchlist, Ratings (weeks 12-13) ✅
+## Phase 8: Accounts, Watchlist, Ratings ✅
 
-**Status:** Complete (2026-04-17). Diary modal and profile page deferred.
+Added user accounts with Spring Security and JWT. Register, login, stay logged in for 7 days. Passwords hashed with BCrypt.
 
-**Goal:** Personal movie tracking.
+Watchlist: click a button on any movie to save it. Ratings: 5 stars on the detail page.
 
-### Phase 8a: Auth Backend ✅
-- [x] Spring Security + JWT (jjwt 0.12.6, BCrypt, 7-day tokens)
-- [x] `POST /api/v1/auth/register` and `POST /api/v1/auth/login`
-- [x] JwtAuthFilter on protected endpoints, public endpoints still open
-- [x] UserActivity DynamoDB table: USER#id/#PROFILE with GSI3 email lookup
+User data lives in the UserActivity table:
+- `USER#<id>, #PROFILE` for the account itself
+- `USER#<id>, WATCHLIST#<movieId>` for watchlist items
+- `USER#<id>, RATING#<movieId>` for ratings
+- GSI3 for email lookups
 
-### Phase 8b: Auth Frontend ✅
-- [x] AuthContext (localStorage token, login/register/logout)
-- [x] Login/Register page with toggle
-- [x] Conditional nav (Sign In vs username + Logout + Watchlist)
+The frontend stores the JWT in localStorage and attaches it to API calls via a context. Navigation swaps between "Sign In" and the username depending on auth state.
 
-### Phase 8c: Watchlist & Ratings ✅
-- [x] `POST/DELETE /api/v1/watchlist/{movieId}`, `GET /api/v1/watchlist`
-- [x] `POST /api/v1/ratings/{movieId}`, `GET /api/v1/ratings`
-- [x] Watchlist toggle button + 5-star rating on movie detail page
-- [x] Watchlist page showing saved movies
-
-**Deliverable:** Users can register, login, save movies to watchlist, and rate them.
+**What I learned:** Spring Security filter chain, JWT basics, how to wire auth context through React with hooks.
 
 ---
 
-## Phase 9: Personal Stats & UI Polish (week 14) ✅
+## Phase 9: Stats and Polish ✅
 
-**Status:** Complete (2026-04-17). AI taste profile and Letterboxd import deferred.
+Built a stats page: total ratings, average rating, watchlist count, genre breakdown in a bar chart. Aggregates everything server-side from the user's ratings and watchlist.
 
-**Goal:** "Your year in movies" - personalized analytics.
+Also ran a polish pass:
+- Dark/light mode toggle (☀️/🌙)
+- Loading spinners instead of "Loading..." text
+- Toast notifications when you add to watchlist or rate something
+- Fixed all the frontend routes (had a mix of `/movies/` and `/movie/` - standardized to singular)
 
-**Tasks:**
-- [x] Backend: `GET /api/v1/stats` - aggregates ratings, watchlist, genre breakdown
-- [x] Frontend: stats dashboard with summary cards and bar charts
-- [x] Watchlist remove button with instant refresh
-- [x] Dark/Light mode toggle (☀️/🌙)
-- [x] Loading spinners replacing "Loading..." text
-- [x] Toast notifications for watchlist/rating actions
-- [x] Fixed all frontend route links (standardized to /movie/)
-- [ ] AI taste profile from user's ratings (deferred)
-- [ ] Letterboxd CSV import (deferred)
-
-**Deliverable:** Stats dashboard, polished UI with dark mode, toasts, and spinners.
+**Deferred:** AI taste profile (generate a vector from your ratings, find movies close to it), Letterboxd CSV import.
 
 ---
 
-## Phase 10: Testing & Quality (week 15)
+## Phase 10: Tests ✅
 
-**Goal:** Confidence that everything works.
+Backend tests with JUnit 5 and Mockito. Covered the movie service, auth controller, JWT utilities. Happy paths and a few failure cases.
 
-### Phase 10a: Backend Unit Tests
-- MovieService tests (JUnit 5 + Mockito)
-- AuthController tests (register, login, duplicate email)
-- JwtUtil tests (generate, validate, expired)
-
-### Phase 10b: API Integration Tests
-- Full endpoint tests with MockMvc (movies, search, auth, watchlist)
-
-### Phase 10c: Frontend Tests (deferred)
-- Component tests (Vitest)
-- E2E tests (Playwright)
-
-**Deliverable:** Backend test suite with service + API coverage.
-
-**Learning focus:** Testing strategy, Testcontainers, Playwright.
+Frontend tests deferred. I know I should do them but I wanted to ship the visual phases first.
 
 ---
 
-## Phase 11: Deploy, CI/CD & Portfolio Polish (weeks 16-17) ✅
+## Phase 11: CI/CD and Docker ✅
 
-**Status:** Complete (2026-04-17). Cloud deploy (Render/Vercel) and CDK deferred.
+GitHub Actions workflow that runs on every push: backend build + tests, frontend build, in parallel. Takes about 3 minutes.
 
-**Goal:** CI pipeline, Docker, polished README.
+Backend Dockerfile is multi-stage - Corretto 21 Alpine base, gradle build in one stage, slim runtime in the next. Image is small.
 
-**Tasks:**
-- [x] GitHub Actions CI: backend build+test, frontend build (parallel jobs)
-- [x] Backend Dockerfile (multi-stage, Corretto 21 Alpine)
-- [x] README rewrite: architecture diagram, features list, getting started
-- [ ] Deploy to Render/Vercel (deferred)
-- [ ] AWS CDK for DynamoDB tables (deferred)
-- [ ] Demo GIF (deferred)
+README got a rewrite with architecture diagram (Mermaid), features table, and a copy-paste "get it running" section.
 
-**Deliverable:** CI pipeline, Docker-ready backend, polished README.
+**Deferred:** actual cloud deploy (Render/Vercel), AWS CDK for the DynamoDB tables.
 
 ---
 
-## Summary Timeline
+## Phases 12-17: Visual Redesign ✅
 
-| Phase | What | Weeks | Key Learning |
-|-------|------|-------|-------------|
-| 1 ✅ | Project Setup & DDB Design | 1 | DynamoDB single-table design |
-| 2 ✅ | ETL to DynamoDB | 2 | Batch writes, denormalization |
-| 3 ✅ | Java API Foundation | 3-4 | Spring Boot, AWS SDK v2 |
-| 4 ✅ | React Frontend + TMDB Posters | 5-6 | React+TS, TanStack Query, Tailwind, API integration |
-| 5 ✅ | Search & Filtering | 7 | DDB queries, debouncing, URL state |
-| 6 ✅ | AI Embeddings & Semantic Search | 8-9 | Embeddings, vector search, cosine similarity |
-| 7 ✅ | AI Chat & Discovery | 10-11 | RAG, SSE streaming, chat UX |
-| 8 ✅ | Auth, Watchlist, Ratings | 12-13 | Spring Security, JWT, DDB user data |
-| 9 ✅ | Personal Stats & UI Polish | 14 | Aggregation, dark mode, toasts, spinners |
-| 10 ✅ | Testing & Quality | 15 | JUnit 5, Mockito, unit tests |
-| 11 ✅ | Deploy, CI/CD & Polish | 16-17 | GitHub Actions, Docker, README |
-| 12 | The Cookbook - Visual Identity | 18 | Typography, color theory, Framer Motion |
-| 13 | The Tasting Menu - Home & Browse | 19 | Hero sections, masonry grids, scroll animations |
-| 14 | The Chef's Table - Movie Detail | 20 | Editorial layouts, parallax, micro-interactions |
-| 15 | The Kitchen - Chat & Discovery | 21 | Conversational UI, card physics, ambient design |
-| 16 | The Wine List - Stats & Profile | 22 | Data visualization, animated reveals, achievements |
-| 17 | The Reservation - Auth & Onboarding | 23 | Onboarding flow, empty states, delight moments |
+Halfway through I decided the app looked like every other movie grid clone. So I did a full visual rebuild inspired by restaurant menus and wine bar vibes. The phase names got thematic: The Cookbook, The Tasting Menu, The Chef's Table, The Kitchen, The Wine List, The Reservation.
+
+**Phase 12 - The Cookbook** (visual identity): Playfair Display for headings, Inter for body. Deep navy base, warm amber accents, soft cream text. Installed Framer Motion for page transitions and physics.
+
+**Phase 13 - The Tasting Menu** (home + browse): Full-width hero on the home page. Staff Picks carousel. Mood tiles that trigger pre-built semantic searches. Masonry grid on browse with genre pills and a decade scrubber. Cards tilt on hover based on mouse position.
+
+**Phase 14 - The Chef's Table** (movie detail): Editorial magazine layout. Parallax background poster. Sticky floating action bar for watchlist/rate/share. Genre-colored tags. Drop cap on the overview. Stars that fill with a pour animation when you rate.
+
+**Phase 15 - The Kitchen** (chat redesign): Dark ambient gradient background that slowly shifts. Typewriter effect on messages (faster on common words, natural rhythm). Movie recs slide in as horizontal tasting cards. A mood dial at the top lets you set the vibe before chatting.
+
+**Phase 16 - The Wine List** (stats + profile): "Your Year in Movies" intro. Numbers count up from zero. Animated donut chart for genre breakdown. Achievement badges - First Taste, Connoisseur, Sommelier. Confetti when you unlock one.
+
+**Phase 17 - The Reservation** (auth redesign): Split screen login. Rotating movie poster collage on the left, form on the right. Floating labels. Empty states with personality - "Your watchlist is emptier than a theater on a Tuesday afternoon. Let's fix that."
+
+**Deferred in this batch:** onboarding flow for new users, radar chart for taste profile, profile page.
 
 ---
 
-## Phase 12: The Cookbook - Visual Identity System
+## Timeline
 
-**Inspiration:** High-end restaurant branding. A restaurant doesn't just serve food - it has a visual language. Fonts, colors, textures, spacing all tell a story before you read a word.
+| Phase | What | Status |
+|-------|------|--------|
+| 1 | Setup + DDB design | ✅ |
+| 2 | ETL to DynamoDB | ✅ |
+| 3 | Java API | ✅ |
+| 4 | React frontend + posters | ✅ |
+| 5 | Title search | ✅ |
+| 6 | Semantic search | ✅ |
+| 7 | AI chat | ✅ |
+| 8 | Auth + watchlist + ratings | ✅ |
+| 9 | Stats + polish | ✅ |
+| 10 | Tests | ✅ |
+| 11 | CI + Docker | ✅ |
+| 12 | Visual identity | ✅ |
+| 13 | Home + browse redesign | ✅ |
+| 14 | Movie detail redesign | ✅ |
+| 15 | Chat redesign | ✅ |
+| 16 | Stats redesign | ✅ |
+| 17 | Auth redesign | ✅ |
 
-**Goal:** Establish a premium visual identity that makes this app feel like a curated experience, not a database viewer.
-
-### 12a: Typography & Color Palette
-- Install Google Fonts: **Playfair Display** (headings - editorial, cinematic) + **Inter** (body - clean, modern)
-- New color system: deep navy base (`#0a0f1a`), warm amber accent (`#f59e0b`), soft cream text (`#faf5eb`), muted sage for secondary (`#6b8f71`)
-- Think wine bar, not Netflix. Rich, warm, inviting.
-- CSS custom properties for the full palette, easy theme switching
-
-### 12b: Framer Motion Foundation
-- Install `framer-motion` (free, MIT license)
-- Page transition animations (fade + subtle slide)
-- Staggered grid loading - cards appear one by one like dishes arriving at a table
-- Shared layout animations - clicking a movie card morphs into the detail page
-- Hover micro-interactions: cards lift with shadow, slight rotation on mouse position
-
-### 12c: Glass & Texture
-- Glassmorphism nav bar (backdrop-blur, semi-transparent)
-- Subtle grain texture overlay on backgrounds (CSS noise filter)
-- Gradient mesh backgrounds on hero sections
-- Card borders with subtle gradient glow on hover
-
----
-
-## Phase 13: The Tasting Menu - Home & Browse Redesign
-
-**Inspiration:** Museum exhibit + fashion lookbook. Each section is curated, not just a grid dump. Think Apple product pages - every scroll reveals something new.
-
-**Goal:** Home page that tells a story. Browse page that feels like flipping through a beautifully designed magazine.
-
-### 13a: Home Page - The Grand Entrance
-- Hero section: full-width backdrop of a random top movie (blurred poster), with the movie title in large Playfair Display, tagline below, "Explore" CTA
-- "Staff Picks" section: horizontal scroll carousel with oversized cards (like a chef's tasting menu - 5 curated picks)
-- "Mood Boards" section: clickable mood tiles ("Rainy Sunday", "Date Night", "Mind-Bending", "Feel-Good Cry") - each is a pre-built semantic search
-- "Recently Added" section: masonry grid layout (Pinterest-style, varying card heights based on poster aspect ratio)
-- Scroll-triggered fade-in animations for each section
-
-### 13b: Browse Page - The Wine Wall
-- Replace flat grid with a filterable masonry layout
-- Genre chips become elegant pill buttons with icons (🔫 Action, 💕 Romance, 🧠 Sci-Fi, etc.)
-- Decade selector becomes a horizontal timeline you can scrub
-- "Surprise Me" button - picks a random movie with a card flip animation
-- Infinite scroll with staggered card entrance animations
-- Active filters shown as removable tags above the grid
-
-### 13c: Movie Cards - The Plating
-- Cards get a "tilt on hover" effect (CSS perspective transform based on mouse position)
-- Rating badge: small amber circle in the corner with the score
-- On hover: poster dims slightly, title + year + rating slide up from bottom (overlay)
-- Watchlist heart icon in the top-right corner (visible on hover, filled if in watchlist)
-- Skeleton loading cards with shimmer animation while data loads
+About 19 weeks total at evening/weekend pace.
 
 ---
 
-## Phase 14: The Chef's Table - Movie Detail Redesign
+## What's Left
 
-**Inspiration:** Long-form editorial design (like a New York Times feature article) + vinyl record sleeve art. The movie detail page should feel like you're reading a beautifully designed magazine spread about this film.
-
-**Goal:** Movie detail page that makes you want to linger, not just grab info and leave.
-
-### 14a: Hero & Layout
-- Full-width hero: poster as blurred background, sharp poster on the left, title + metadata on the right
-- Parallax scroll: background poster moves slower than content as you scroll down
-- Floating action bar: watchlist + rating + share buttons in a sticky pill that follows you down the page
-- Genre tags become colored pills matching a genre color map (Action=red, Comedy=amber, Horror=purple, etc.)
-
-### 14b: Content Sections as Courses
-- "The Story" (overview) - large, readable text with drop cap first letter
-- "The Cast" - horizontal scroll of circular avatar placeholders with name below (like a dinner party seating chart)
-- "Behind the Scenes" - crew in a minimal two-column layout
-- "The Numbers" - budget/revenue as a visual comparison bar (like a versus graphic)
-- "Similar Tastes" - similar movies in a horizontal scroll with peek-ahead (shows edge of next card)
-- Each section fades in on scroll with a subtle slide-up
-
-### 14c: Micro-interactions
-- Star rating: stars fill with a pour animation (like filling a wine glass)
-- Watchlist button: heart icon does a bounce animation on click
-- Share button: copies link with a confetti burst
-- Back button: smooth page transition back to the grid
+Deferred items I want to come back to:
+- Cursor pagination on the movies endpoint
+- OpenAPI/Swagger docs
+- Frontend tests (Vitest + Playwright)
+- Cloud deploy (Render + Vercel)
+- AWS CDK for the DynamoDB tables
+- Embed the full 45K dataset (only embedded 10 test movies so far)
+- Real LLM in chat (swap template for Groq)
+- Onboarding flow for new users
+- Letterboxd CSV import
+- AI taste profile
 
 ---
 
-## Phase 15: The Kitchen - Chat & Discovery Redesign
+## What the Finished App Does
 
-**Inspiration:** A private conversation with a sommelier. Not a chatbot - a knowledgeable friend who happens to know every movie ever made. The UI should feel intimate, not clinical.
+Open it and you can:
+- Browse 45K+ movies with real posters and cast info
+- Search by title or by mood ("heist movies with dark humor")
+- Chat with an AI movie expert
+- See similar movies on every detail page
+- Sign up, rate movies, save a watchlist
+- See your stats: genre breakdown, rating distribution
+- Unlock achievement badges
 
-**Goal:** Chat that feels like a premium experience, not a tech demo.
-
-### 15a: Chat Atmosphere
-- Dark ambient background with subtle animated gradient (slowly shifting deep navy/purple)
-- Messages appear with a typewriter effect (not just word-by-word, but with natural typing rhythm - faster for common words, slight pause before names)
-- User messages: minimal, right-aligned, no bubble - just text with a subtle left border
-- Assistant messages: left-aligned with a small film reel icon avatar
-
-### 15b: Movie Cards in Chat
-- Movie recommendations appear as horizontal "tasting cards" - poster on left, title + year + one-line hook on right
-- Cards slide in from the left with a stagger delay
-- Clicking a card does a smooth expand animation before navigating to the detail page
-- "More like this" quick-reply buttons below each recommendation set
-
-### 15c: Discovery Features
-- "Mood Dial" - a circular selector at the top of chat (like a thermostat) where you can set your mood before chatting: Chill ↔ Intense, Classic ↔ Modern, Familiar ↔ Adventurous
-- Suggested prompts appear as floating pills that gently bob (like bubbles)
-- Empty state: animated film strip that unrolls with the welcome message
-
----
-
-## Phase 16: The Wine List - Stats & Profile Redesign
-
-**Inspiration:** Spotify Wrapped meets a sommelier's tasting journal. Your movie stats should feel like a personal achievement showcase, not a spreadsheet.
-
-**Goal:** Stats page that users screenshot and share. Profile that feels personal.
-
-### 16a: Animated Stats Reveal
-- Stats page loads with a "Your Year in Movies" intro animation
-- Numbers count up from 0 (animated counter)
-- Rating distribution: animated horizontal bars that grow from left to right on scroll
-- Genre breakdown: animated donut chart (CSS conic-gradient + animation)
-- "Your Taste Profile" card: radar chart showing preference axes (Action vs Drama, Classic vs Modern, etc.)
-
-### 16b: Achievement Badges
-- Unlock badges for milestones: "First Rating", "10 Movies Rated", "Genre Explorer" (rated 5+ genres), "Night Owl" (rated after midnight), "Critic" (average rating below 3)
-- Badges appear as small circular icons with a gold/silver/bronze tier
-- New badge unlock: celebratory animation with confetti
-- Badge shelf on profile page
-
-### 16c: Profile Page
-- User avatar (generated from initials, gradient background based on username hash)
-- "Member since" with days count
-- Favorite genre (auto-calculated)
-- Recent activity feed (last 5 ratings/watchlist adds)
-- "Taste Twin" - show which famous director's taste you match closest (based on genre preferences)
-
----
-
-## Phase 17: The Reservation - Auth & Onboarding Redesign
-
-**Inspiration:** Luxury hotel check-in. The first impression sets the tone for everything.
-
-**Goal:** Auth flow that feels welcoming, not like a security checkpoint.
-
-### 17a: Login/Register Redesign
-- Split screen: left side has a rotating movie poster collage (auto-playing, slow crossfade), right side has the form
-- Form fields have floating labels that animate up on focus
-- Password strength indicator as a colored bar
-- "Sign In" button has a subtle shimmer effect
-- Success: confetti burst + redirect with a welcome toast
-
-### 17b: Onboarding Flow (New Users)
-- After first registration: 3-step onboarding
-  1. "Pick 3 genres you love" - large, tappable genre cards with icons
-  2. "Rate these 5 movies" - show 5 popular movies, quick star rating
-  3. "You're all set!" - personalized home page based on their picks
-- Skip button always available
-- Progress dots at the bottom
-
-### 17c: Empty States with Personality
-- Empty watchlist: illustration + "Your watchlist is emptier than a theater on a Tuesday afternoon. Let's fix that."
-- Empty ratings: "You haven't rated anything yet. We promise we won't judge. Much."
-- Empty stats: "Rate a few movies and we'll tell you things about yourself you didn't know."
-- No search results: "Even our AI couldn't find that one. Try something else?"
-
-**Total: ~19 weeks** (at personal project pace, evenings/weekends - adjust as needed)
-
----
-
-## What This Becomes
-
-When done, a user visits your site and can:
-- Browse 600K+ movies with real posters, ratings, cast info
-- Search by title OR natural language ("heist movies with dark humor")
-- Chat with an AI movie expert for personalized recommendations
-- See "similar movies" on every detail page
-- Create an account, rate movies, build a watchlist, log a diary
-- View personal stats: genre breakdown, rating distribution, taste profile
-- Import their Letterboxd history
-- Watch trailers and see where to stream each movie
-
-And when a hiring manager looks at the GitHub repo, they see:
-- Clean architecture (Spring Boot + React, not a tutorial copy)
-- DynamoDB single-table design (shows you understand NoSQL)
-- AI integration that's grounded and useful (not a gimmick)
-- Full test suite with real integration tests
+And if someone's looking at the GitHub:
+- Clean Spring Boot + React architecture (not a tutorial copy)
+- DynamoDB single-table design
+- Local AI that actually works (no API bills)
+- Test suite
 - Docker one-liner setup
-- Live demo link
-- Architecture diagram
-- CI/CD pipeline
+- CI pipeline
+- Architecture diagram in the README
